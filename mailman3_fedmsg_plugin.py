@@ -42,6 +42,7 @@ from mailman.interfaces.archiver import IArchiver
 
 import socket
 import fedmsg
+import fedmsg.config
 
 
 class Archiver(object):
@@ -69,7 +70,8 @@ class Archiver(object):
         hostname = socket.gethostname()
         if not getattr(getattr(fedmsg, '__local', None), '__context', None):
             fedmsg.init(name="mailman.%s" % hostname)
-        self.config = fedmsg.__local.__context.config
+        self.config = fedmsg.config.load_config()
+
 
     def archive_message(self, mlist, msg):
         """Send the message to the "archiver".
