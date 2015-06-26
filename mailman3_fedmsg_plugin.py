@@ -85,7 +85,8 @@ class Archiver(object):
         if mlist.list_name in self.config.get('mailman.excluded_lists', []):
             return
 
-        format = lambda value: value and unicode(value)
+        # Here, by `str` we mean `unicode`.  We're python3 only!
+        format = lambda value: value and str(value)
         msg_metadata = dict([(k, format(msg.get(k))) for k in self.keys])
         lst_metadata = dict(list_name=mlist.list_name)
 
