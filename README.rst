@@ -4,7 +4,7 @@ Enable this by adding the following to your mailman.cfg file::
 
     [archiver.fedmsg]
     # The class implementing the IArchiver interface.
-    class: mailman_fedmsg_plugin.Archiver
+    class: mailman3_fedmsg_plugin.Archiver
     enable: yes
 
 You can exclude certain lists from fedmsg publication by

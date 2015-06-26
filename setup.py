@@ -6,7 +6,7 @@ from setuptools import setup
 
 setup(
     name='mailman3-fedmsg-plugin',
-    version='0.1.1',
+    version='0.2',
     description='Emit fedmsg messages from mailman3',
     author="Ralph Bean",
     author_email="rbean@redhat.com",
