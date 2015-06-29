@@ -37,7 +37,7 @@ adding them to a 'mailman.excluded_lists' list in /etc/fedmsg.d/::
 
 """
 
-from zope.interface import implements
+from zope.interface import implementer
 from mailman.interfaces.archiver import IArchiver
 
 import socket
@@ -45,10 +45,10 @@ import fedmsg
 import fedmsg.config
 
 
+implementer(IArchiver)
 class Archiver(object):
     """ A mailman 3 archiver that forwards messages to the fedmsg bus. """
 
-    implements(IArchiver)
     name = "fedmsg"
 
     keys = [
