@@ -67,8 +67,8 @@ class Archiver(object):
     ]
 
     def __init__(self):
-        hostname = socket.gethostname()
         if not getattr(getattr(fedmsg, '__local', None), '__context', None):
+            hostname = socket.gethostname().split('.')[0]
             fedmsg.init(name="mailman.%s" % hostname)
         self.config = fedmsg.config.load_config()
 
