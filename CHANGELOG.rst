@@ -1,6 +1,11 @@
 Changelog
 =========
 
+0.3
+---
+
+- Change our zope.interface interface. `2276ce32b <https://github.com/fedora-infra/mailman3-fedmsg-plugin/commit/2276ce32bcc887aa5adab6d355f7a2e7e60163ca>`_
+
 0.2
 ---
 
