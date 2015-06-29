@@ -1,6 +1,11 @@
 Changelog
 =========
 
+0.4
+---
+
+- Use the shortname here. `f367378fe <https://github.com/fedora-infra/mailman3-fedmsg-plugin/commit/f367378fefe2b5c4648492ed8db6c74508729fe6>`_
+
 0.3
 ---
 
