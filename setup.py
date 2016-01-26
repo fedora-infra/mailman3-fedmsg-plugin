@@ -1,12 +1,12 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Copyright (C) 20.4 Ralph Bean
+# Copyright (C) 20.5 Ralph Bean
 
 from setuptools import setup
 
 setup(
     name='mailman3-fedmsg-plugin',
-    version='0.4',
+    version='0.5',
     description='Emit fedmsg messages from mailman3',
     author="Ralph Bean",
     author_email="rbean@redhat.com",
