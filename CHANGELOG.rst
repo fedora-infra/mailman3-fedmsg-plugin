@@ -1,3 +1,16 @@
+
+0.5
+---
+
+Pull Requests
+
+- (@ralphbean)      #2, Re-publish the user-agent header to fedmsg.
+  https://github.com/fedora-infra/mailman3-fedmsg-plugin/pull/2
+
+Commits
+
+- 98278f6b3 Re-publish the user-agent header to fedmsg.
+  https://github.com/fedora-infra/mailman3-fedmsg-plugin/commit/98278f6b3
 Changelog
 =========
 
