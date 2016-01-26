@@ -64,6 +64,7 @@ class Archiver(object):
         "references",
         "x-mailman-rule-hits",
         "x-mailman-rule-misses",
+        "user-agent",
     ]
 
     def __init__(self):
