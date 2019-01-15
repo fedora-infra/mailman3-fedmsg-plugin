@@ -1,6 +1,11 @@
 Changelog
 =========
 
+1.0
+---
+
+- Adapt to fedora-messaging
+
 0.6
 ---
 
