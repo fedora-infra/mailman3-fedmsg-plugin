@@ -89,7 +89,13 @@ class Archiver(object):
         # Here, by `str` we mean `unicode`.  We're python3 only!
         format = lambda value: value and str(value)
         msg_metadata = dict([(k, format(msg.get(k))) for k in self.keys])
-        lst_metadata = dict(list_name=mlist.list_name)
+        lst_metadata = dict(
+            list_name=mlist.list_name,
+            mail_host=mlist.mail_host,
+            fqdn_listname=mlist.fqdn_listname,
+            list_id=mlist.list_id,
+            display_name=mlist.display_name,
+            )
 
         fedmsg.publish(topic='receive', modname='mailman',
                        msg=dict(msg=msg_metadata, mlist=lst_metadata))

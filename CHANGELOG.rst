@@ -1,3 +1,10 @@
+Changelog
+=========
+
+0.6
+---
+
+- Add more list metadata in the message.
 
 0.5
 ---
@@ -11,8 +18,6 @@ Commits
 
 - 98278f6b3 Re-publish the user-agent header to fedmsg.
   https://github.com/fedora-infra/mailman3-fedmsg-plugin/commit/98278f6b3
-Changelog
-=========
 
 0.4
 ---
