@@ -1,9 +1,7 @@
-*.swp
-*.pyc
-*.egg*
 dist
 build
 .tox
 htmlcov
 coverage.xml
 .coverage
+.pytest_ignore
