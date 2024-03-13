@@ -17,6 +17,7 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #
 # Authors:  Ralph Bean <rbean@redhat.com>
+# Authors:  Ian Kitembe <ianedwin@outlook.com>
 #
 
 """ Publish notifications about mails to the fedmsg bus.
@@ -28,26 +29,36 @@ Enable this by adding the following to your mailman.cfg file::
     class: mailman3_fedmsg_plugin.Archiver
     enable: yes
 
-You can exclude certain lists from fedmsg publication by
-adding them to a 'mailman.excluded_lists' list in /etc/fedmsg.d/::
+You can exclude certain lists from fedora messaging publication by
+adding them to a 'excluded_lists' list in /etc/fedora-messaging/config.toml::
 
-    config = {
-        'mailman.excluded_lists': ['bugzilla', 'commits'],
-    }
-
+    [consumer_config]
+    excluded_lists = ['bugzilla', 'commits'],
 """
 
+from backoff import expo, on_exception
 from zope.interface import implementer
 from mailman.interfaces.archiver import IArchiver
+from fedora_messaging.message import Message
+from fedora_messaging.api import publish
+from fedora_messaging.exceptions import ConnectionException, PublishTimeout
+from fedora_messaging.config import conf
 
-import socket
-import fedmsg
-import fedmsg.config
+
+@on_exception(
+    expo,
+    (ConnectionException, PublishTimeout),
+    max_tries=3,
+)
+def safe_publish(msg: Message):
+    publish(msg)
 
 
-implementer(IArchiver)
+@implementer(IArchiver)
 class Archiver(object):
-    """ A mailman 3 archiver that forwards messages to the fedmsg bus. """
+    """
+    A mailman 3 archiver that forwards messages to the fedmsg bus.
+    """
 
     name = "fedmsg"
 
@@ -67,15 +78,9 @@ class Archiver(object):
         "user-agent",
     ]
 
-    def __init__(self):
-        if not getattr(getattr(fedmsg, '__local', None), '__context', None):
-            hostname = socket.gethostname().split('.')[0]
-            fedmsg.init(name="mailman.%s" % hostname)
-        self.config = fedmsg.config.load_config()
-
-
     def archive_message(self, mlist, msg):
-        """Send the message to the "archiver".
+        """
+        Send the message to the "archiver".
 
         In our case, we just publish it to the fedmsg bus.
 
@@ -83,31 +88,34 @@ class Archiver(object):
         :param msg: The message object.
         """
 
-        if mlist.list_name in self.config.get('mailman.excluded_lists', []):
+        if mlist.list_name in conf["consumer_config"].get("excluded_lists", []):
             return
 
-        # Here, by `str` we mean `unicode`.  We're python3 only!
-        format = lambda value: value and str(value)
-        msg_metadata = dict([(k, format(msg.get(k))) for k in self.keys])
-        lst_metadata = dict(
-            list_name=mlist.list_name,
-            mail_host=mlist.mail_host,
-            fqdn_listname=mlist.fqdn_listname,
-            list_id=mlist.list_id,
-            display_name=mlist.display_name,
-            )
+        def _format(value):
+            return str(value) if value else value
 
-        fedmsg.publish(topic='receive', modname='mailman',
-                       msg=dict(msg=msg_metadata, mlist=lst_metadata))
+        msg_metadata = {key: _format(getattr(msg, key, None)) for key in self.keys}
+        lst_metadata = {
+            "list_name": mlist.list_name,
+            "mail_host": mlist.mail_host,
+            "fqdn_listname": mlist.fqdn_listname,
+            "list_id": mlist.list_id,
+            "display_name": mlist.display_name,
+        }
+        body = dict(msg=msg_metadata, mlist=lst_metadata)
+        fm_msg = Message(body=body, topic="mailman.receive")
+        safe_publish(fm_msg)
 
     def list_url(self, mlist):
-        """ This doesn't make sense for fedmsg.
+        """
+        This doesn't make sense for fedmsg.
         But we must implement for IArchiver.
         """
         return None
 
     def permalink(self, mlist, msg):
-        """ This doesn't make sense for fedmsg.
+        """
+        This doesn't make sense for fedmsg.
         But we must implement for IArchiver.
         """
         return None
