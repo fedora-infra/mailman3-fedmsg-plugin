@@ -2303,4 +2303,4 @@ test = ["zope.i18nmessageid", "zope.testing", "zope.testrunner"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9"
-content-hash = "e29effdb50fa6c1ad9ae84e6cd438137498e36833c13ed3080f0064a43d04dfd"
+content-hash = "05434d6f6ddc8b5f64373512e862359360352cb7198ccc944c687a66ce1d907f"

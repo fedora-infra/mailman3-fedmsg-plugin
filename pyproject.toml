@@ -14,10 +14,11 @@ python = "^3.9"
 fedora-messaging = "^3.4.1"
 backoff = "^2.2.1"
 mailman = ">=3.0.0"
-mailman3-fedmsg-plugin-schemas = {path = "./mailman_schema", develop = true}
+mailman3-fedmsg-plugin-schemas = ">=1.0.0"
 zope-interface = "^6.2"
 
 [tool.poetry.group.dev.dependencies]
+mailman3-fedmsg-plugin-schemas = {path = "./mailman_schema", develop = true}
 ruff = "*"
 black = "*"
 pytest = ">=7.4.0"
