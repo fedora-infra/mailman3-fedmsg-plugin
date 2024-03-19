@@ -1,0 +1,61 @@
+[tool.poetry]
+name = "mailman3-fedmsg-plugin"
+version = "1.0.0"
+description = "Emit fedora-messaging messages from Mailman 3"
+authors = ["Aurélien Bompard <aurelien@bompard.org>"]
+license = "LGPL-3.0-or-later"
+readme = "README.md"
+homepage = "https://github.com/fedora-infra/mailman3-fedmsg-plugin"
+repository = "https://github.com/fedora-infra/mailman3-fedmsg-plugin"
+keywords = ["fedora", "fedora-messaging"]
+
+[tool.poetry.dependencies]
+python = "^3.9"
+fedora-messaging = "^3.4.1"
+backoff = "^2.2.1"
+mailman = ">=3.0.0"
+mailman3-fedmsg-plugin-schemas = {path = "./mailman_schema", develop = true}
+zope-interface = "^6.2"
+
+[tool.poetry.group.dev.dependencies]
+ruff = "*"
+black = "*"
+pytest = ">=7.4.0"
+pytest-cov = ">=4.1.0"
+coverage = {extras = ["toml"], version = ">=7.0.0"}
+reuse = ">=1.1.0"
+pre-commit = "^3.6.2"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+
+[tool.black]
+line-length = 100
+
+[tool.ruff]
+line-length = 100
+target-version = "py39"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "S", "B", "RUF"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["S101"]
+
+[tool.coverage.run]
+branch = true
+
+[tool.coverage.report]
+fail_under = 100
+exclude_lines = [
+    "pragma: no cover",
+    "if __name__ == .__main__.:",
+    "def __repr__",
+    "if TYPE_CHECKING:",
+    "raise NotImplementedError",
+]
+omit = [
+    "tests/*",
+]

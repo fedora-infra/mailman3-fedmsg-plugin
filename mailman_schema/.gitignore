@@ -1,7 +1,3 @@
+__pycache__
 dist
 build
-.tox
-htmlcov
-coverage.xml
-.coverage
-.pytest_ignore
