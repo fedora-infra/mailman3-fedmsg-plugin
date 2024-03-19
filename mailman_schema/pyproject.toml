@@ -1,0 +1,34 @@
+[tool.poetry]
+name = "mailman3-fedmsg-plugin-schemas"
+version = "1.0.0"
+description = "A schema describing fedora-messaging messages sent by mailman"
+authors = ["Aurélien Bompard <aurelien@bompard.org>"]
+license = "LGPL-3.0-or-later"
+readme = "README.md"
+homepage = "http://github.com/fedora-infra/mailman3-fedmsg-plugin"
+repository = "http://github.com/fedora-infra/mailman3-fedmsg-plugin"
+keywords = ["fedora", "fedora-messaging"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: System Administrators",
+    "Programming Language :: Python :: 3",
+    "Operating System :: POSIX :: Linux",
+    "Topic :: Communications",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+
+[tool.poetry.dependencies]
+python = "^3.9"
+fedora-messaging = "^3.4.1"
+
+[tool.poetry.group.dev.dependencies]
+ruff = "*"
+black = "*"
+
+[tool.poetry.plugins."fedora.messages"]
+"mailman.messageV1" = "mailman3_fedmsg_plugin_schemas:MessageV1"
+
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"

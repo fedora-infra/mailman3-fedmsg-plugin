@@ -1,40 +1,59 @@
-# This file is part of mailman3-fedmsg-plugin.
+# SPDX-FileCopyrightText: 2024 Contributors to the Fedora Project
 #
-# Copyright (C) 2018  Red Hat, Inc.
-#
-# This program is free software; you can redistribute it and/or modify
-# it under the terms of the GNU General Lesser Public License as published by
-# the Free Software Foundation; either version 3 of the License, or
-# (at your option) any later version.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU Lesser General Public License for more details.
-#
-# You should have received a copy of the GNU Lesser General Public License along
-# with this program; if not, write to the Free Software Foundation, Inc.,
-# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+# SPDX-License-Identifier: LGPL-3.0-or-later
 
 """Publish notifications about mails to the fedora-messaging bus.
 
 See the README file for installation instructions.
 """
 
+import email
 import logging
+import sys
+import typing
 
-from zope.interface import implementer
-from mailman.interfaces.archiver import IArchiver
-from mailman.interfaces.configuration import MissingConfigurationFileError
-from mailman.config import config
-from mailman.config.config import external_configuration
-
-
+import backoff
 from fedora_messaging import api
-from fedora_messaging_schemas.mailman.schemas import MessageV1
-
+from fedora_messaging.config import conf as fm_conf
+from fedora_messaging.exceptions import ConnectionException, PublishTimeout
+from mailman.interfaces.archiver import IArchiver
+from mailman3_fedmsg_plugin_schemas import MessageV1
+from zope.interface import implementer
 
 _log = logging.getLogger("mailman.archiver")
+
+
+def retry_handler(details):
+    message = details["args"][0]
+    _log.warning(
+        "Publishing %r to %r failed. Retrying. %s",
+        message.message_id,
+        message.topic,
+        sys.exc_info()[0].__name__,
+    )
+
+
+def giveup_handler(details):
+    message = details["args"][0]
+    _log.error(
+        "Publishing %r to %r failed. Giving up. %s",
+        message.message_id,
+        message.topic,
+        sys.exc_info()[0].__name__,
+    )
+
+
+@backoff.on_exception(
+    backoff.expo,
+    (ConnectionException, PublishTimeout),
+    max_tries=3,
+    on_backoff=retry_handler,
+    on_giveup=giveup_handler,
+    raise_on_giveup=False,
+    logger=None,
+)
+def safe_publish(msg: api.Message):
+    api.publish(msg)
 
 
 def _to_string(value):
@@ -42,12 +61,12 @@ def _to_string(value):
 
 
 @implementer(IArchiver)
-class Archiver(object):
-    """ A mailman 3 archiver that forwards messages to the fedmsg bus. """
+class Archiver:
+    """A mailman 3 archiver that forwards messages to the Fedora Messaging bus."""
 
     name = "fedmsg"
 
-    message_headers = [
+    message_headers: typing.ClassVar = [
         "archived-at",
         "delivered-to",
         "date",
@@ -65,35 +84,25 @@ class Archiver(object):
         "user-agent",
     ]
 
-    mlist_props = ["list_name", "mail_host", "fqdn_listname", "list_id", "display_name"]
+    mlist_props: typing.ClassVar = [
+        "list_name",
+        "mail_host",
+        "fqdn_listname",
+        "list_id",
+        "display_name",
+    ]
 
     def __init__(self):
-        self._config = {"excluded_lists": []}
-        self._load_config()
-
-    def _load_config(self):
-        try:
-            archiver_config = external_configuration(
-                config.archiver.fedora_messaging.configuration
-            )
-        except MissingConfigurationFileError:
-            return
-        self._config["excluded_lists"] = [
-            name.strip()
-            for name in archiver_config.get(
-                "general", "excluded_lists", fallback=""
-            ).split(",")
-            if name.strip()
-        ]
+        self._config = fm_conf["consumer_config"]
 
     def list_url(self, mlist):
-        """ This doesn't make sense for fedora-messaging.
+        """This doesn't make sense for fedora-messaging.
         But we must implement for IArchiver.
         """
         return None
 
     def permalink(self, mlist, msg):
-        """ This doesn't make sense for fedora-messaging.
+        """This doesn't make sense for fedora-messaging.
         But we must implement for IArchiver.
         """
         return None
@@ -107,25 +116,76 @@ class Archiver(object):
         :param msg: The message object.
         """
 
-        if mlist.list_id in self._config["excluded_lists"]:
+        if mlist.list_id in self._config.get("excluded_lists", []):
             return
 
         message = self._make_message(mlist, msg)
-        self._send_to_amqp(message)
+        _log.debug("Publishing %r to %r", message.message_id, message.topic)
+        safe_publish(message)
 
     def _make_message(self, mlist, msg):
         msg_metadata = dict([(k, _to_string(msg.get(k))) for k in self.message_headers if k in msg])
+        msg_metadata["recipients"] = self._get_recipients(msg)
         lst_metadata = dict([(prop, getattr(mlist, prop)) for prop in self.mlist_props])
-        return MessageV1(body=dict(msg=msg_metadata, mlist=lst_metadata))
+        return MessageV1(
+            body=dict(
+                msg=msg_metadata,
+                mlist=lst_metadata,
+                url=self._get_url(msg),
+                usernames=self._get_usernames(mlist, msg),
+                sender_username=self._get_username(self._get_address_from_header(msg, "from")),
+            ),
+        )
 
-    def _send_to_amqp(self, message):
-        _log.debug("Publishing %r to %r", message.message_id, message.topic)
-        try:
-            api.publish(message)
-        except Exception as e:
-            _log.exception(
-                'Publishing "%r" on topic "%r" failed (%r)',
-                message.message_id,
-                message.topic,
-                e,
-            )
+    def _get_url(self, msg):
+        archived_at = msg.get("archived-at")
+        if archived_at:
+            archived_at = archived_at.lstrip("<").rstrip(">")
+        if not archived_at:
+            return None
+        if archived_at.startswith("http"):
+            return archived_at
+        base_url = self._config.get("archive_base_url")
+        if not base_url:
+            return None
+        return base_url + archived_at
+
+    def _get_usernames(self, mlist, msg):
+        # We also include people that were explicitely added to CC or the To header.
+        usernames = []
+        for header in ("from", "to", "cc"):
+            address = self._get_address_from_header(msg, header)
+            if address == mlist.fqdn_listname:
+                continue
+            username = self._get_username(address)
+            if username is not None:
+                usernames.append(username)
+        return usernames
+
+    def _get_address_from_header(self, msg, header_name):
+        value = msg.get(header_name)
+        if value is None:
+            return None
+        address = email.utils.parseaddr(value.strip())[1]
+        if not address:
+            return None
+        return address
+
+    def _get_username(self, address):
+        if not address:
+            return None
+        # TODO: make a FASJSON call?
+        if any(address.endswith(f"@{domain}") for domain in self._config.get("owned_domains", [])):
+            return address.split("@", 1)[0]
+        else:
+            return None
+
+    def _get_recipients(self, msg):
+        """The email's To and CC headers."""
+        recipients = []
+        for header in ("to", "cc"):
+            address = self._get_address_from_header(msg, header)
+            if not address:
+                continue
+            recipients.append(address)
+        return recipients
