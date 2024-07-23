@@ -19,7 +19,7 @@ repos:
 
   # Ruff
   - repo: https://github.com/charliermarsh/ruff-pre-commit
-    rev: v0.5.3
+    rev: v0.5.4
     hooks:
       - id: ruff
   # License headers
