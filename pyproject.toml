@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "mailman3-fedmsg-plugin"
-version = "1.0.0"
+version = "1.0.1"
 description = "Emit fedora-messaging messages from Mailman 3"
 authors = ["Aurélien Bompard <aurelien@bompard.org>"]
 license = "LGPL-3.0-or-later"

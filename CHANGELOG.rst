@@ -1,6 +1,12 @@
 Changelog
 =========
 
+1.0.1
+-----
+
+- Remove leftover copyright line ([637c10c](https://github.com/fedora-infra/mailman3-fedmsg-plugin/commit/637c10c))
+- Update dependencies
+
 1.0
 ---
 
